@@ -88,39 +88,48 @@ r1cs_example<libff::Fr<ppT_B> > test_verifier_B(const r1cs_example<libff::Fr<ppT
         const size_t vk_size_in_bits = r1cs_ppzksnark_verification_key_variable<ppT_B>::size_in_bits(example.constraint_system.primary_input_size);
 
         protoboard<FieldT_B> pb;
-        r1cs_ppzksnark_preprocessed_r1cs_ppzksnark_verification_key_variable<ppT_B> hardcoded_vk(pb, keypair.vk, "hardcoded_vk");
+
+        cerr<<"input size"<<endl;
+
+        pb_variable_array<FieldT_B> vk_bits;
+        vk_bits.allocate(pb, vk_size_in_bits, "vk_bits");
+        cerr<<pb.primary_input().size()<<' '<<pb.auxiliary_input().size()<<endl;
+
         pb_variable_array<FieldT_B> primary_input_bits;
         primary_input_bits.allocate(pb, primary_input_size_in_bits, "primary_input_bits");
+        cerr<<pb.primary_input().size()<<' '<<pb.auxiliary_input().size()<<endl;
 
         r1cs_ppzksnark_proof_variable<ppT_B> proof(pb, "proof");
+        cerr<<pb.primary_input().size()<<' '<<pb.auxiliary_input().size()<<endl;
+
+        r1cs_ppzksnark_verification_key_variable<ppT_B> vk(pb, vk_bits, example.constraint_system.primary_input_size, "vk");
+        cerr<<pb.primary_input().size()<<' '<<pb.auxiliary_input().size()<<endl;
 
         pb_variable<FieldT_B> result;
         result.allocate(pb, "result");
+        cerr<<pb.primary_input().size()<<' '<<pb.auxiliary_input().size()<<endl;
 
-        r1cs_ppzksnark_online_verifier_gadget<ppT_B> online_verifier(pb, hardcoded_vk, primary_input_bits, elt_size, proof, result, "online_verifier");
+        r1cs_ppzksnark_verifier_gadget<ppT_B> verifier(pb, vk, primary_input_bits, elt_size, proof, result, "verifier");
+        cerr<<pb.primary_input().size()<<' '<<pb.auxiliary_input().size()<<endl;
 
         PROFILE_CONSTRAINTS(pb, "check that proofs lies on the curve")
         {
                 proof.generate_r1cs_constraints();
         }
-        online_verifier.generate_r1cs_constraints();
+        verifier.generate_r1cs_constraints();
 
-        libff::bit_vector input_as_bits;
-        for (const FieldT_A &el : example.primary_input)
-        {
-                libff::bit_vector v = libff::convert_field_element_to_bit_vector<FieldT_A>(el, elt_size);
-                input_as_bits.insert(input_as_bits.end(), v.begin(), v.end());
-        }
+        libff::bit_vector input_as_bits = covert_input<FieldT_A, FieldT_B>(example.primary_input, elt_size);
 
         primary_input_bits.fill_with_bits(pb, input_as_bits);
 
+        vk.generate_r1cs_witness(keypair.vk);
         proof.generate_r1cs_witness(pi);
-        online_verifier.generate_r1cs_witness();
+        verifier.generate_r1cs_witness();
         pb.val(result) = FieldT_B::one();
 
-        //cerr<<"divide: "<<vk_size_in_bits % elt_size <<endl;
-        //pb.set_input_sizes(vk_size_in_bits / elt_size + example.constraint_system.primary_input_size);
-        //vk_size_in_Fields = vk_size_in_bits / elt_size;
+        cerr<<"divide: "<<vk_size_in_bits % elt_size <<endl;
+        pb.set_input_sizes(vk_size_in_bits / elt_size + example.constraint_system.primary_input_size);
+        vk_size_in_Fields = vk_size_in_bits / elt_size;
 
         //cerr<<pb.num_inputs()<<' '<<vk_size_in_bits / elt_size + example.constraint_system.primary_input_size<<endl;
 
@@ -364,14 +373,12 @@ void test_verifier(const std::string &annotation_A, const std::string &annotatio
         size_t vk_size_in_Fields;
         // generate the verifier protoboard for the protoboard of the merkle tree instance
         r1cs_example<FieldT_A> new_example = get_MT_instance<ppT_A, FieldT_A, HashT_A>(16);
-        r1cs_example<FieldT_B> pre_verifier_1 = test_verifier_B< ppT_A, ppT_B >(new_example, annotation_A, annotation_B, vk_size_in_Fields);
-        r1cs_example<FieldT_A> verifier_1 = test_verifier_B< ppT_B, ppT_A >(pre_verifier_1, annotation_A, annotation_B, vk_size_in_Fields);
+        r1cs_example<FieldT_B> verifier_1 = test_verifier_B< ppT_A, ppT_B >(new_example, annotation_A, annotation_B, vk_size_in_Fields);
 
         // try recursive proofs
         cerr<<"start second proof"<<endl;
         r1cs_example<FieldT_A> another_example = get_MT_instance<ppT_A, FieldT_A, HashT_A>(16);
-        r1cs_example<FieldT_B> pre_verifier_2 = test_verifier_B< ppT_A, ppT_B >(another_example, annotation_A, annotation_B, vk_size_in_Fields);
-        r1cs_example<FieldT_A> verifier_2 = test_verifier_B< ppT_B, ppT_A >(pre_verifier_2, annotation_A, annotation_B, vk_size_in_Fields);
+        r1cs_example<FieldT_B> verifier_2 = test_verifier_B< ppT_A, ppT_B >(another_example, annotation_A, annotation_B, vk_size_in_Fields);
         verifier_2.constraint_system = verifier_1.constraint_system;
         //protoboard<FieldT_B> pb_2(pb_1.get_constraint_system, another_example.primary_input, another_example.auxiliary_input);
 
@@ -381,12 +388,12 @@ void test_verifier(const std::string &annotation_A, const std::string &annotatio
         //exit(0);
 
         // merge proof
-        r1cs_example<FieldT_A> final_example = merge_verifier< ppT_B, ppT_A, FieldT_B, FieldT_A>(verifier_1, verifier_2);
+        r1cs_example<FieldT_B> final_example = merge_verifier< ppT_A, ppT_B, FieldT_A, FieldT_B>(verifier_1, verifier_2);
 
         cerr<<"test final proof"<<endl;
         assert(final_example.constraint_system.is_satisfied(final_example.primary_input, final_example.auxiliary_input));
         cerr<<final_example.constraint_system.is_satisfied(final_example.primary_input, final_example.auxiliary_input)<<endl;
-/*
+
         size_t primary_input_size_1 = verifier_1.primary_input.size();
         size_t digest_len = HashT_B::get_digest_len();
         cerr<<HashT_A::get_digest_len() << ' '<<HashT_B::get_digest_len()<<endl;
@@ -395,16 +402,16 @@ void test_verifier(const std::string &annotation_A, const std::string &annotatio
         merge_inputs<FieldT_B>(final_example, 0, vk_size_in_Fields-1, primary_input_size_1, primary_input_size_1 + vk_size_in_Fields - 1);
 
         cerr<<final_example.constraint_system.is_satisfied(final_example.primary_input, final_example.auxiliary_input)<<endl;
- */
 
+/*
         cerr<<final_example.primary_input.size()<<' '<<final_example.auxiliary_input.size()<<endl;
         cerr<<final_example.constraint_system.num_constraints()<<endl;
-        const r1cs_ppzksnark_keypair<ppT_A> keypair = r1cs_ppzksnark_generator<ppT_A>(final_example.constraint_system);
-        const r1cs_ppzksnark_proof<ppT_A> pi = r1cs_ppzksnark_prover<ppT_A>(keypair.pk, final_example.primary_input, final_example.auxiliary_input);
-        bool bit = r1cs_ppzksnark_verifier_strong_IC<ppT_A>(keypair.vk, final_example.primary_input, pi);
+        const r1cs_ppzksnark_keypair<ppT_B> keypair = r1cs_ppzksnark_generator<ppT_B>(final_example.constraint_system);
+        const r1cs_ppzksnark_proof<ppT_B> pi = r1cs_ppzksnark_prover<ppT_B>(keypair.pk, final_example.primary_input, final_example.auxiliary_input);
+        bool bit = r1cs_ppzksnark_verifier_strong_IC<ppT_B>(keypair.vk, final_example.primary_input, pi);
         assert(bit);
         cerr<<bit<<endl;
-
+ */
 }
 
 template<typename ppT_A, typename ppT_B>
