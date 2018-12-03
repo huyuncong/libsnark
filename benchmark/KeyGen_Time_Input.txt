@@ -1,4 +1,4 @@
-leaf_mnt4 1
-leaf_mnt6 1
-mnt4to6 1
-mnt6to4 1
+leaf_mnt4 9.855039
+leaf_mnt6 12.898727
+mnt4to6 26.609696
+mnt6to4 33.027344
