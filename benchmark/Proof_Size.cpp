@@ -11,11 +11,20 @@ char ch[200];
 long long mnt4_size, mnt6_size, max_records, input4_size, input6_size;
 long long proof_size[2], primary_input_size[2];
 
-long long divide(long long L, long long R, long long l, long long r, long long e)
+long long divide(long long L, long long R, long long l, long long r)
 {
-        if (L == R) return proof_size[e]+primary_input_size[e];
-        if (l <= L && R <= r) return proof_size[e]+primary_input_size[e];
-        if (R < l || L > r) return 0;
+	printf("L = %d, R = %d, l = %d, r = %d\n", L, R, l, r);
+
+        if (L == R){
+		return proof_size[0]+primary_input_size[0];
+	}
+	
+	if (l <= L && R <= r){
+		
+		return proof_size[e]+primary_input_size[e];
+	}
+	
+	if (R < l || L > r) return 0;
 
         long long Mid = (L + R) / 2;
         long long sum = 0;
@@ -47,12 +56,17 @@ int main()
         proof_size[1] = mnt6_size;
         primary_input_size[0] = input4_size;
         primary_input_size[1] = input6_size;
-        for (;; ) {
-                int epoch;
-                printf("Number of Records:");
-                scanf("%d", &epoch);
-                if (epoch == 0) break;
-                printf("%lld\n", calc(epoch));
-        }
-        return 0;
+ 
+//	for (;; ) {
+//                int epoch;
+//                printf("Number of Records:");
+//                scanf("%d", &epoch);
+//                if (epoch == 0) break;
+//                printf("%lld\n", calc(epoch));
+//      }
+
+	int epoch = 30000;
+	printf("%lld\n", calc(epoch));
+
+	return 0;
 }

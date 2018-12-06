@@ -1,4 +1,3 @@
 leaf_mnt4 3.000
-leaf_mnt6 4.000
 mnt4to6 21.0000
 mnt6to4 28.0000
