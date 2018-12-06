@@ -1,0 +1,5 @@
+maximum_records: 65536
+mnt4_size: 384
+mnt6_size: 424
+primary_inp_mnt4: 186
+primary_inp_mnt6: 186
