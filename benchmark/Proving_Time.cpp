@@ -31,12 +31,9 @@ int main()
         fscanf(inp, "%s%lf", ch, &mnt4to6);
         fscanf(inp, "%s%lf", ch, &mnt6to4);
 
-        for (;; ) {
-                int epoch;
-                printf("Number of Epoch:");
-                scanf("%d", &epoch);
-                if (epoch == 0) break;
-                printf("%f\n", calc(epoch));
+        for(int i = 1; i <= 43200; i+= 100) {
+                int epoch = i;
+                printf("%d %d\n", i, (int)(calc(epoch)));
         }
         return 0;
 }
