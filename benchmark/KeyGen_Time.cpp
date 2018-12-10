@@ -21,18 +21,6 @@ double calc(int epoch)
         return sum;
 }
 
-double calc2(int epoch)
-{
-        int height = 0, x = 1;
-        for (; x < epoch; x <<=1, height++ ) ;
-        double sum = leaf_mnt6;
-        for (int i = 1; i <= height; i++) {
-                if (!(i & 1)) sum += mnt4to6;
-                else sum += mnt6to4;
-        }
-        return sum;
-}
-
 int main()
 {
         FILE* inp = fopen("KeyGen_Time_Input.txt", "r");
@@ -48,7 +36,7 @@ int main()
                 printf("Number of Epoch:");
                 scanf("%d", &epoch);
                 if (epoch == 0) break;
-                printf("%f\n", min(calc(epoch), calc2(epoch)));
+                printf("%f\n", calc(epoch));
         }
         return 0;
 }
